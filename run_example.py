@@ -7,12 +7,12 @@ from libPythonCBS import PythonCBS
 from flatland.envs.rail_env import RailEnv
 from flatland.envs.rail_generators import sparse_rail_generator,rail_from_file
 from flatland.envs.schedule_generators import sparse_schedule_generator,schedule_from_file
-from flatland.envs.malfunction_generators  import malfunction_from_params, MalfunctionParameters,malfunction_from_file,ParamMalfunctionGen
+from flatland.envs.malfunction_generators  import malfunction_from_params, MalfunctionParameters,malfunction_from_file #,ParamMalfunctionGen
 from flatland.core.env_observation_builder import DummyObservationBuilder
 from flatland.utils.rendertools import RenderTool, AgentRenderVariant
 import time, glob
 
-env_renderer_enable = True
+env_renderer_enable = False
 
 #####################################################################
 # malfunction parameters
@@ -56,8 +56,8 @@ local_env = RailEnv(width=40,
                     schedule_generator=schedule_generator,
                     number_of_agents=1,
                     obs_builder_object=DummyObservationBuilder(),
-                    #malfunction_generator_and_process_data=malfunction_from_params(stochastic_data),
-                    malfunction_generator=ParamMalfunctionGen(stochastic_data),
+                    malfunction_generator_and_process_data=malfunction_from_params(stochastic_data),
+                    # malfunction_generator=ParamMalfunctionGen(stochastic_data),
                     remove_agents_at_target=True,
                     random_seed=100)
 
