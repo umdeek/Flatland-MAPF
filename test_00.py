@@ -139,4 +139,5 @@ while True:
 
 print("Measured Time: ", np.mean([value[0] for value in stat.values()]))
 print("Measured Dones: ", np.mean([value[1] for value in stat.values()]))
+print("Expected reward", number_of_agents)
 print("Rewards: ", np.mean([value[2] for value in stat.values()]))
