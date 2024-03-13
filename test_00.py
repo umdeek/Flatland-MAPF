@@ -5,7 +5,7 @@ import random
 from libPythonCBS import PythonCBS
 
 # Import the Flatland rail environment
-from metric_wrapper import RailEnvWithMetric
+from flatland.envs.rail_env import RailEnv
 from flatland.envs.rail_generators import sparse_rail_generator,rail_from_file
 from flatland.envs.schedule_generators import sparse_schedule_generator,schedule_from_file
 from flatland.envs.malfunction_generators  import malfunction_from_params, MalfunctionParameters,malfunction_from_file# ,ParamMalfunctionGen
@@ -64,7 +64,7 @@ schedule_generator = sparse_schedule_generator(speed_ration_map)
 # Initialize flatland environment
 #####################################################################
 
-local_env = RailEnvWithMetric(width=width,
+local_env = RailEnv(width=width,
                     height=height,
                     rail_generator=rail_generator,
                     schedule_generator=schedule_generator,
@@ -126,14 +126,17 @@ while True:
 
     steps += 1
     if done['__all__']:
-        solver.clearMCP()
         episode_id += 1
-        stat.update({episode_id: deepcopy(local_env.stat)})
+        stat.update({episode_id: (
+            time.time() - start_time,
+            np.sum(list(local_env.dones.values()))/len(local_env.dones),
+            np.sum(list(local_env.rewards_dict.values()))
+        )})
         local_env.reset()
-        if episode_id > total_episodes:
-            break
+        solver.clearMCP()
+        start_time = time.time()
+        break
 
-print("arrival_ratio_mean: ", np.mean([value[0] for value in stat.values()]))
-print("departure_ratio_mean: ", np.mean([value[1] for value in stat.values()]))
-print("total_reward_mean: ", np.mean([value[3] for value in stat.values()]))
-print("norm_reward_mean: ", np.mean([value[4] for value in stat.values()]))
+print("Measured Time: ", np.mean([value[0] for value in stat.values()]))
+print("Measured Dones: ", np.mean([value[1] for value in stat.values()]))
+print("Rewards: ", np.mean([value[2] for value in stat.values()]))

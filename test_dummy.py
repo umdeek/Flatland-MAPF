@@ -115,13 +115,16 @@ while True:
     steps += 1
     if done['__all__']:
         episode_id += 1
-        stat.update({episode_id: deepcopy(local_env.stat)})
+        stat.update({episode_id: (
+            time.time() - start_time, 
+            np.sum(list(local_env.dones.values()))/len(local_env.dones), 
+            np.sum(list(local_env.rewards_dict.values()))
+        )})
         local_env.reset()
+        start_time = time.time()
         if episode_id > total_episodes:
             break
 
-
-print("arrival_ratio_mean: ", np.mean([value[0] for value in stat.values()]))
-print("departure_ratio_mean: ", np.mean([value[1] for value in stat.values()]))
-# print("total_reward_mean: ", np.mean([value[3] for value in stat.values()]))
-# print("norm_reward_mean: ", np.mean([value[4] for value in stat.values()]))
+print("Measured Time: ", np.mean([value[0] for value in stat.values()]))
+print("Measured Dones: ", np.mean([value[1] for value in stat.values()]))
+print("Rewards: ", np.mean([value[2] for value in stat.values()]))
