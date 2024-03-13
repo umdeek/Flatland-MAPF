@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 import random
-
-# Compile codes in PythonCBS in folder CBS-corridor with cmake and import PythonCBS class
-from libPythonCBS import PythonCBS
-
-# Import the Flatland rail environment
 from metric_wrapper import RailEnvWithMetric
 from flatland.envs.rail_generators import sparse_rail_generator,rail_from_file
 from flatland.envs.schedule_generators import sparse_schedule_generator,schedule_from_file
@@ -57,7 +52,6 @@ speed_ration_map = speed_ratio_map
 schedule_generator = sparse_schedule_generator(speed_ration_map)
 
 
-
 #####################################################################
 # Initialize flatland environment
 #####################################################################
@@ -73,7 +67,7 @@ local_env = RailEnvWithMetric(width=width,
                     remove_agents_at_target=True,
                     random_seed=random.randint(0, 100))
 
-local_env.reset()
+observations, info = local_env.reset()
 
 #####################################################################
 # Initialize Mapf-solver
@@ -87,10 +81,6 @@ neighbor_generation_strategy = 3
 debug = False
 time_limit =200
 replan = True
-
-solver = PythonCBS(local_env, framework, time_limit, default_group_size, debug, replan,stop_threshold,agent_priority_strategy,neighbor_generation_strategy)
-solver.search(1.1, max_iterations)
-solver.buildMCP()
 
 #####################################################################
 # Show the flatland visualization, for debugging
@@ -110,9 +100,8 @@ while True:
     #####################################################################
 
     # Get action dictionary from mapf solver.
-    action =  solver.getActions(local_env, steps, 3.0)
-
-    observation, all_rewards, done, info = local_env.step(action)
+    action = {agent: random.sample([0, 1, 2, 3]) for agent in observations}
+    observations, all_rewards, done, info = local_env.step(action)
 
     if env_renderer_enable:
         env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
@@ -121,7 +110,6 @@ while True:
 
     steps += 1
     if done['__all__']:
-        solver.clearMCP()
         break
 
 print("Measured Time: ", time.time() - start_time)
