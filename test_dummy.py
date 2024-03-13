@@ -7,7 +7,8 @@ from flatland.envs.malfunction_generators  import malfunction_from_params, Malfu
 from flatland.core.env_observation_builder import DummyObservationBuilder
 from flatland.utils.rendertools import RenderTool, AgentRenderVariant
 import time, glob
-
+import numpy as np
+from copy import deepcopy
 env_renderer_enable = False
 
 
@@ -94,13 +95,16 @@ if env_renderer_enable:
 start_time = time.time()
 
 steps=0
+stat = {}
+total_episodes = 100
+episode_id = 0
 while True:
     #####################################################################
     # Simulation main loop
     #####################################################################
 
     # Get action dictionary from mapf solver.
-    action = {agent: random.sample([0, 1, 2, 3]) for agent in observations}
+    action = {agent: np.random.choice([0, 1, 2, 3]) for agent in info["action_required"]}
     observations, all_rewards, done, info = local_env.step(action)
 
     if env_renderer_enable:
@@ -110,8 +114,14 @@ while True:
 
     steps += 1
     if done['__all__']:
-        break
+        episode_id += 1
+        stat.update({episode_id: deepcopy(local_env.stat)})
+        local_env.reset()
+        if episode_id > total_episodes:
+            break
 
-print("Measured Time: ", time.time() - start_time)
-print("Measured Dones: ", local_env.dones)
-print("Rewards: ", local_env.rewards_dict)
+
+print("arrival_ratio_mean: ", np.mean([value[0] for value in stat.values()]))
+print("departure_ratio_mean: ", np.mean([value[1] for value in stat.values()]))
+# print("total_reward_mean: ", np.mean([value[3] for value in stat.values()]))
+# print("norm_reward_mean: ", np.mean([value[4] for value in stat.values()]))
