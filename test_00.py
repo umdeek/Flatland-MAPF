@@ -133,6 +133,7 @@ while True:
             np.sum(list(local_env.rewards_dict.values()))
         )})
         local_env.reset()
+        steps = 0
         solver.clearMCP()
         start_time = time.time()
         break

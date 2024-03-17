@@ -12,6 +12,8 @@ from flatland.envs.malfunction_generators  import malfunction_from_params, Malfu
 from flatland.core.env_observation_builder import DummyObservationBuilder
 from flatland.utils.rendertools import RenderTool, AgentRenderVariant
 import time, glob
+import numpy as np
+from copy import deepcopy
 
 env_renderer_enable = False
 
@@ -101,8 +103,12 @@ if env_renderer_enable:
                               screen_width=local_env.width*50,show_debug=False)
     env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
 
-steps=0
 start_time = time.time()
+
+steps=0
+stat = {}
+total_episodes = 100
+episode_id = 0
 while True:
     #####################################################################
     # Simulation main loop
@@ -120,8 +126,19 @@ while True:
 
     steps += 1
     if done['__all__']:
+        episode_id += 1
+        stat.update({episode_id: (
+            time.time() - start_time,
+            np.sum(list(local_env.dones.values()))/len(local_env.dones),
+            np.sum(list(local_env.rewards_dict.values()))
+        )})
+        local_env.reset()
+        steps = 0
         solver.clearMCP()
+        start_time = time.time()
         break
-print("Measured Time: ", time.time() - start_time)
-print("Measured Dones: ", local_env.dones)
-print("Rewards: ", local_env.rewards_dict)
+
+print("Measured Time: ", np.mean([value[0] for value in stat.values()]))
+print("Measured Dones: ", np.mean([value[1] for value in stat.values()]))
+print("Expected reward", number_of_agents)
+print("Rewards: ", np.mean([value[2] for value in stat.values()]))
