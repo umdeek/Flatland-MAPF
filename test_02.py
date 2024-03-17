@@ -136,7 +136,8 @@ while True:
         steps = 0
         solver.clearMCP()
         start_time = time.time()
-        break
+        if episode_id > total_episodes:
+            break
 
 print("Measured Time: ", np.mean([value[0] for value in stat.values()]))
 print("Measured Dones: ", np.mean([value[1] for value in stat.values()]))

@@ -96,7 +96,7 @@ start_time = time.time()
 
 steps=0
 stat = {}
-total_episodes = 100
+total_episodes = 3
 episode_id = 0
 while True:
     #####################################################################
