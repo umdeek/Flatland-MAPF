@@ -81,41 +81,41 @@ local_env.reset()
 # Initialize Mapf-solver
 #####################################################################
 framework = "LNS"  # "LNS" for large neighborhood search
-default_group_size = 5 # max number of agents in a group.
+default_group_size = 5  # max number of agents in a group.
 max_iterations = 1000
 stop_threshold = 10
 agent_priority_strategy = 3
 neighbor_generation_strategy = 3
 debug = False
-time_limit =200
+time_limit = 200
 replan = True
 
-solver = PythonCBS(local_env, framework, time_limit, default_group_size, debug, replan,stop_threshold,agent_priority_strategy,neighbor_generation_strategy)
-solver.search(1.1, max_iterations)
-solver.buildMCP()
-
-#####################################################################
-# Show the flatland visualization, for debugging
-#####################################################################
-
-if env_renderer_enable:
-    env_renderer = RenderTool(local_env, screen_height=local_env.height * 50,
-                              screen_width=local_env.width*50,show_debug=False)
-    env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
-
 start_time = time.time()
-
-steps=0
+steps = 0
 stat = {}
 total_episodes = 100
 episode_id = 0
 while True:
+    solver = PythonCBS(local_env, framework, time_limit, default_group_size, debug, replan, stop_threshold,
+                       agent_priority_strategy, neighbor_generation_strategy)
+    solver.search(1.1, max_iterations)
+    solver.buildMCP()
+
+    #####################################################################
+    # Show the flatland visualization, for debugging
+    #####################################################################
+
+    if env_renderer_enable:
+        env_renderer = RenderTool(local_env, screen_height=local_env.height * 50,
+                                  screen_width=local_env.width * 50, show_debug=False)
+        env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
+
     #####################################################################
     # Simulation main loop
     #####################################################################
 
     # Get action dictionary from mapf solver.
-    action =  solver.getActions(local_env, steps, 3.0)
+    action = solver.getActions(local_env, steps, 3.0)
 
     observation, all_rewards, done, info = local_env.step(action)
 
@@ -123,13 +123,12 @@ while True:
         env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
         time.sleep(0.5)
 
-
     steps += 1
     if done['__all__']:
         episode_id += 1
         stat.update({episode_id: (
             time.time() - start_time,
-            np.sum(list(local_env.dones.values()))/len(local_env.dones),
+            np.sum(list(local_env.dones.values())) / len(local_env.dones),
             np.sum(list(local_env.rewards_dict.values()))
         )})
         local_env.reset()

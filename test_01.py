@@ -90,26 +90,25 @@ debug = False
 time_limit =200
 replan = True
 
-solver = PythonCBS(local_env, framework, time_limit, default_group_size, debug, replan,stop_threshold,agent_priority_strategy,neighbor_generation_strategy)
-solver.search(1.1, max_iterations)
-solver.buildMCP()
-
-#####################################################################
-# Show the flatland visualization, for debugging
-#####################################################################
-
-if env_renderer_enable:
-    env_renderer = RenderTool(local_env, screen_height=local_env.height * 50,
-                              screen_width=local_env.width*50,show_debug=False)
-    env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
-
 start_time = time.time()
-
 steps=0
 stat = {}
 total_episodes = 100
 episode_id = 0
 while True:
+    solver = PythonCBS(local_env, framework, time_limit, default_group_size, debug, replan,stop_threshold,agent_priority_strategy,neighbor_generation_strategy)
+    solver.search(1.1, max_iterations)
+    solver.buildMCP()
+    
+    #####################################################################
+    # Show the flatland visualization, for debugging
+    #####################################################################
+    
+    if env_renderer_enable:
+        env_renderer = RenderTool(local_env, screen_height=local_env.height * 50,
+                                  screen_width=local_env.width*50,show_debug=False)
+        env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
+    
     #####################################################################
     # Simulation main loop
     #####################################################################
