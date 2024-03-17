@@ -125,6 +125,10 @@ while True:
 
     steps += 1
     if done['__all__']:
+        print(f"""{episode_id} : 
+        {time.time() - start_time}, 
+        {np.sum(list(local_env.dones.values())) / len(local_env.dones)},
+        {np.sum(list(local_env.rewards_dict.values()))}""")
         episode_id += 1
         stat.update({episode_id: (
             time.time() - start_time,
