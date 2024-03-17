@@ -82,7 +82,7 @@ local_env.reset()
 #####################################################################
 framework = "LNS"  # "LNS" for large neighborhood search
 default_group_size = 5  # max number of agents in a group.
-max_iterations = 1000
+max_iterations = 100
 stop_threshold = 10
 agent_priority_strategy = 3
 neighbor_generation_strategy = 3
