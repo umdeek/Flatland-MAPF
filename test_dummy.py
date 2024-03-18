@@ -6,6 +6,7 @@ from flatland.envs.schedule_generators import sparse_schedule_generator,schedule
 from flatland.envs.malfunction_generators  import malfunction_from_params, MalfunctionParameters,malfunction_from_file# ,ParamMalfunctionGen
 from flatland.core.env_observation_builder import DummyObservationBuilder
 from flatland.utils.rendertools import RenderTool, AgentRenderVariant
+from flatland.envs.agent_utils import RailAgentStatus
 import time, glob
 import numpy as np
 from copy import deepcopy
@@ -69,7 +70,31 @@ local_env = RailEnvWithMetric(width=width,
                     random_seed=random.randint(0, 100))
 
 observations, info = local_env.reset()
-total_episodes = 3
+total_episodes = 2
+episode_id = 0
+stat = {}
+steps = 0
+
+
+def final_metric(env):
+    n_arrival, n_no_departure = 0, 0
+    for a in env.agents:
+        if a.position is None and a.status != RailAgentStatus.READY_TO_DEPART:
+            n_arrival += 1
+        elif a.position is None and a.status == RailAgentStatus.READY_TO_DEPART:
+            n_no_departure += 1
+
+    arrival_ratio = n_arrival / env.get_num_agents()
+    departure_ratio = 1 - n_no_departure / env.get_num_agents()
+    total_reward = sum(list(env.rewards_dict.values()))
+    norm_reward = 1 + total_reward / env._max_episode_steps / env.get_num_agents()
+
+#    deadlock_ratio = np.mean(list(env.deadlocks_dict.values()))
+
+    print(
+        f'\n=== Episode Ends! ===\n# Steps:{env._elapsed_steps}\n# Agents:{env.get_num_agents()}\nArrival Ratio:{arrival_ratio:.3f}\nDeparture Ratio:{departure_ratio:.3f}\nTotal Reward:{total_reward:.3f}\nNorm Reward:{norm_reward:.3f}\n')
+    return arrival_ratio, departure_ratio, total_reward, norm_reward
+
 
 while True:
     #####################################################################
@@ -96,9 +121,6 @@ while True:
 
     start_time = time.time()
 
-    steps=0
-    stat = {}
-    episode_id = 0
     #####################################################################
     # Simulation main loop
     #####################################################################
@@ -114,17 +136,16 @@ while True:
 
     steps += 1
     if done['__all__']:
+        metrics = stat.update({episode_id: final_metric(local_env)})
         episode_id += 1
-        stat.update({episode_id: (
-            time.time() - start_time, 
-            np.sum(list(local_env.dones.values()))/len(local_env.dones), 
-            np.sum(list(local_env.rewards_dict.values()))
-        )})
         local_env.reset()
         start_time = time.time()
+        steps = 0
         if episode_id > total_episodes:
             break
 
-print("Measured Time: ", np.mean([value[0] for value in stat.values()]))
-print("Measured Dones: ", np.mean([value[1] for value in stat.values()]))
-print("Rewards: ", np.mean([value[2] for value in stat.values()]))
+print(stat)
+print("arrival_ratio: ", np.mean([value[0] for value in stat.values()]))
+print("departure_ratio: ", np.mean([value[1] for value in stat.values()]))
+print("total_reward: ", np.mean([value[2] for value in stat.values()]))
+print("norm_reward: ", np.mean([value[3] for value in stat.values()]))

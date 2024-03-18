@@ -11,6 +11,7 @@ from flatland.envs.schedule_generators import sparse_schedule_generator,schedule
 from flatland.envs.malfunction_generators  import malfunction_from_params, MalfunctionParameters,malfunction_from_file# ,ParamMalfunctionGen
 from flatland.core.env_observation_builder import DummyObservationBuilder
 from flatland.utils.rendertools import RenderTool, AgentRenderVariant
+from flatland.envs.agent_utils import RailAgentStatus
 import time, glob
 import numpy as np
 from copy import deepcopy
@@ -59,7 +60,6 @@ speed_ration_map = speed_ratio_map
 schedule_generator = sparse_schedule_generator(speed_ration_map)
 
 
-
 #####################################################################
 # Initialize flatland environment
 #####################################################################
@@ -75,7 +75,31 @@ local_env = RailEnv(width=width,
                     remove_agents_at_target=True,
                     random_seed=random.randint(0, 100))
 
-local_env.reset()
+observations, info = local_env.reset()
+total_episodes = 2
+episode_id = 0
+stat = {}
+steps = 0
+
+
+def final_metric(env):
+    n_arrival, n_no_departure = 0, 0
+    for a in env.agents:
+        if a.position is None and a.status != RailAgentStatus.READY_TO_DEPART:
+            n_arrival += 1
+        elif a.position is None and a.status == RailAgentStatus.READY_TO_DEPART:
+            n_no_departure += 1
+
+    arrival_ratio = n_arrival / env.get_num_agents()
+    departure_ratio = 1 - n_no_departure / env.get_num_agents()
+    total_reward = sum(list(env.rewards_dict.values()))
+    norm_reward = 1 + total_reward / env._max_episode_steps / env.get_num_agents()
+
+#    deadlock_ratio = np.mean(list(env.deadlocks_dict.values()))
+
+    print(
+        f'\n=== Episode Ends! ===\n# Steps:{env._elapsed_steps}\n# Agents:{env.get_num_agents()}\nArrival Ratio:{arrival_ratio:.3f}\nDeparture Ratio:{departure_ratio:.3f}\nTotal Reward:{total_reward:.3f}\nNorm Reward:{norm_reward:.3f}\n')
+    return arrival_ratio, departure_ratio, total_reward, norm_reward
 
 #####################################################################
 # Initialize Mapf-solver
@@ -89,26 +113,24 @@ neighbor_generation_strategy = 3
 debug = False
 time_limit =200
 replan = True
-
 start_time = time.time()
-steps=0
-stat = {}
-total_episodes = 100
-episode_id = 0
+solver = PythonCBS(local_env, framework, time_limit, default_group_size, debug, replan, stop_threshold,
+                   agent_priority_strategy, neighbor_generation_strategy)
+solver.search(1.1, max_iterations)
+solver.buildMCP()
+
 while True:
-    solver = PythonCBS(local_env, framework, time_limit, default_group_size, debug, replan,stop_threshold,agent_priority_strategy,neighbor_generation_strategy)
-    solver.search(1.1, max_iterations)
-    solver.buildMCP()
-    
+
     #####################################################################
     # Show the flatland visualization, for debugging
     #####################################################################
-    
+
     if env_renderer_enable:
         env_renderer = RenderTool(local_env, screen_height=local_env.height * 50,
                                   screen_width=local_env.width*50,show_debug=False)
         env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
-    
+
+
     #####################################################################
     # Simulation main loop
     #####################################################################
@@ -125,24 +147,19 @@ while True:
 
     steps += 1
     if done['__all__']:
-        print(f"""{episode_id} : 
-        {time.time() - start_time}, 
-        {np.sum(list(local_env.dones.values())) / len(local_env.dones)},
-        {np.sum(list(local_env.rewards_dict.values()))}""")
-        episode_id += 1
-        stat.update({episode_id: (
-            time.time() - start_time,
-            np.sum(list(local_env.dones.values()))/len(local_env.dones),
-            np.sum(list(local_env.rewards_dict.values()))
-        )})
-        local_env.reset()
         steps = 0
-        solver.clearMCP()
+        metrics = stat.update({episode_id: final_metric(local_env)})
+        episode_id += 1
+        observations, info = local_env.reset()
         start_time = time.time()
+        solver = PythonCBS(local_env, framework, time_limit, default_group_size, debug, replan, stop_threshold,
+                           agent_priority_strategy, neighbor_generation_strategy)
+        solver.search(1.1, max_iterations)
+        solver.buildMCP()
         if episode_id > total_episodes:
             break
 
-print("Measured Time: ", np.mean([value[0] for value in stat.values()]))
-print("Measured Dones: ", np.mean([value[1] for value in stat.values()]))
-print("Expected reward", number_of_agents)
-print("Rewards: ", np.mean([value[2] for value in stat.values()]))
+print("arrival_ratio: ", np.mean([value[0] for value in stat.values()]))
+print("departure_ratio: ", np.mean([value[1] for value in stat.values()]))
+print("total_reward: ", np.mean([value[2] for value in stat.values()]))
+print("norm_reward: ", np.mean([value[3] for value in stat.values()]))
