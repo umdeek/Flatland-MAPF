@@ -76,7 +76,7 @@ local_env = RailEnv(width=width,
                     random_seed=random.randint(0, 100))
 
 observations, info = local_env.reset()
-total_episodes = 2
+total_episodes = 100
 episode_id = 0
 stat = {}
 steps = 0
